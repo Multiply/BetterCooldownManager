@@ -109,8 +109,8 @@ local function StyleIcons()
 end
 
 local function SetHooks()
-    hooksecurefunc(EditModeManagerFrame, "EnterEditMode", function() if InCombatLockdown() then return end Position() end)
-    hooksecurefunc(EditModeManagerFrame, "ExitEditMode", function() if InCombatLockdown() then return end BCDM.LEMO:LoadLayouts() Position() end)
+    hooksecurefunc(EditModeManagerFrame, "EnterEditMode", function() if InCombatLockdown() then return end Position() BCDM:UpdateTrackedBars() end)
+    hooksecurefunc(EditModeManagerFrame, "ExitEditMode", function() if InCombatLockdown() then return end BCDM.LEMO:LoadLayouts() Position() BCDM:UpdateTrackedBars() end)
     hooksecurefunc(CooldownViewerSettings, "RefreshLayout", function() if InCombatLockdown() then return end BCDM:UpdateBCDM() end)
 end
 
@@ -279,6 +279,158 @@ local function CenterWrappedIcons()
     if utilitySettings and utilitySettings.CenterHorizontally then CenterWrappedRows("UtilityCooldownViewer") end
 end
 
+local function FetchTrackedBarColour()
+    local BuffBarDB = BCDM.db.profile.CooldownManager.BuffBar
+    if BuffBarDB.ColourByClass then
+        local _, class = UnitClass("player")
+        local classColour = RAID_CLASS_COLORS[class]
+        if classColour then
+            return classColour.r, classColour.g, classColour.b, 1
+        end
+    end
+    return BuffBarDB.ForegroundColour[1], BuffBarDB.ForegroundColour[2], BuffBarDB.ForegroundColour[3], BuffBarDB.ForegroundColour[4]
+end
+
+local function StyleTrackedBars()
+    if not ShouldSkin() then return end
+    local BuffBarDB = BCDM.db.profile.CooldownManager.BuffBar
+    local GeneralDB = BCDM.db.profile.General
+    local borderSize = BCDM.db.profile.CooldownManager.General.BorderSize
+    local viewerFrame = _G["BuffBarCooldownViewer"]
+    if not viewerFrame then return end
+
+    local r, g, b, a = FetchTrackedBarColour()
+    local iconZoom = BCDM.db.profile.CooldownManager.General.IconZoom * 0.5
+
+    for _, barFrame in ipairs({ viewerFrame:GetChildren() }) do
+        if barFrame then
+            -- Blizzard structure: barFrame.Bar (StatusBar), barFrame.Icon (frame containing .Icon texture),
+            -- barFrame.Bar.Name (FontString), barFrame.Bar.Duration (FontString),
+            -- barFrame.Bar.BarBG (background texture), barFrame.Bar.Pip (pip texture),
+            -- barFrame.DebuffBorder
+            local statusBar = barFrame.Bar
+            local iconFrame = barFrame.Icon
+            local iconTexture = iconFrame and iconFrame.Icon
+            local nameText = statusBar and statusBar.Name
+            local timeText = statusBar and statusBar.Duration
+
+            barFrame:SetHeight(BuffBarDB.Height)
+
+            if statusBar then
+                statusBar:SetStatusBarTexture(BCDM.Media.Foreground)
+                statusBar:SetStatusBarColor(r, g, b, a)
+
+                -- Hide the Blizzard background and pip textures
+                if statusBar.BarBG then statusBar.BarBG:Hide() end
+                if statusBar.Pip then statusBar.Pip:Hide() end
+            end
+
+            if barFrame.DebuffBorder then barFrame.DebuffBorder:SetAlpha(0) end
+
+            if iconFrame then
+                if BuffBarDB.Icon.Enabled then
+                    iconFrame:Show()
+                    iconFrame:SetSize(BuffBarDB.Height, BuffBarDB.Height)
+                    if iconTexture then
+                        BCDM:StripTextures(iconTexture)
+                        iconTexture:SetTexCoord(iconZoom, 1 - iconZoom, iconZoom, 1 - iconZoom)
+                    end
+                    iconFrame:ClearAllPoints()
+                    if statusBar then
+                        if BuffBarDB.Icon.Layout == "RIGHT" then
+                            iconFrame:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", -borderSize, -borderSize)
+                            iconFrame:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", -borderSize, borderSize)
+                            statusBar:ClearAllPoints()
+                            statusBar:SetPoint("TOPLEFT", barFrame, "TOPLEFT", borderSize, -borderSize)
+                            statusBar:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMLEFT", 0, 0)
+                        else
+                            iconFrame:SetPoint("TOPLEFT", barFrame, "TOPLEFT", borderSize, -borderSize)
+                            iconFrame:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", borderSize, borderSize)
+                            statusBar:ClearAllPoints()
+                            statusBar:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 0, 0)
+                            statusBar:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", -borderSize, borderSize)
+                        end
+                    end
+                    BCDM:AddBorder(iconFrame)
+                else
+                    iconFrame:Hide()
+                    if statusBar then
+                        statusBar:ClearAllPoints()
+                        statusBar:SetPoint("TOPLEFT", barFrame, "TOPLEFT", borderSize, -borderSize)
+                        statusBar:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", -borderSize, borderSize)
+                    end
+                end
+            elseif statusBar then
+                statusBar:ClearAllPoints()
+                statusBar:SetPoint("TOPLEFT", barFrame, "TOPLEFT", borderSize, -borderSize)
+                statusBar:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", -borderSize, borderSize)
+            end
+
+            if nameText then
+                if BuffBarDB.Text.SpellName.Enabled then
+                    nameText:Show()
+                    nameText:SetFont(BCDM.Media.Font, BuffBarDB.Text.SpellName.FontSize, GeneralDB.Fonts.FontFlag)
+                    nameText:SetTextColor(BuffBarDB.Text.SpellName.Colour[1], BuffBarDB.Text.SpellName.Colour[2], BuffBarDB.Text.SpellName.Colour[3], 1)
+                    nameText:ClearAllPoints()
+                    nameText:SetPoint(BuffBarDB.Text.SpellName.Layout[1], statusBar, BuffBarDB.Text.SpellName.Layout[2], BuffBarDB.Text.SpellName.Layout[3], BuffBarDB.Text.SpellName.Layout[4])
+                    if GeneralDB.Fonts.Shadow.Enabled then
+                        nameText:SetShadowColor(GeneralDB.Fonts.Shadow.Colour[1], GeneralDB.Fonts.Shadow.Colour[2], GeneralDB.Fonts.Shadow.Colour[3], GeneralDB.Fonts.Shadow.Colour[4])
+                        nameText:SetShadowOffset(GeneralDB.Fonts.Shadow.OffsetX, GeneralDB.Fonts.Shadow.OffsetY)
+                    else
+                        nameText:SetShadowColor(0, 0, 0, 0)
+                        nameText:SetShadowOffset(0, 0)
+                    end
+                else
+                    nameText:Hide()
+                end
+            end
+
+            if timeText then
+                if BuffBarDB.Text.Duration.Enabled then
+                    timeText:Show()
+                    timeText:SetFont(BCDM.Media.Font, BuffBarDB.Text.Duration.FontSize, GeneralDB.Fonts.FontFlag)
+                    timeText:SetTextColor(BuffBarDB.Text.Duration.Colour[1], BuffBarDB.Text.Duration.Colour[2], BuffBarDB.Text.Duration.Colour[3], 1)
+                    timeText:ClearAllPoints()
+                    timeText:SetPoint(BuffBarDB.Text.Duration.Layout[1], statusBar, BuffBarDB.Text.Duration.Layout[2], BuffBarDB.Text.Duration.Layout[3], BuffBarDB.Text.Duration.Layout[4])
+                    if GeneralDB.Fonts.Shadow.Enabled then
+                        timeText:SetShadowColor(GeneralDB.Fonts.Shadow.Colour[1], GeneralDB.Fonts.Shadow.Colour[2], GeneralDB.Fonts.Shadow.Colour[3], GeneralDB.Fonts.Shadow.Colour[4])
+                        timeText:SetShadowOffset(GeneralDB.Fonts.Shadow.OffsetX, GeneralDB.Fonts.Shadow.OffsetY)
+                    else
+                        timeText:SetShadowColor(0, 0, 0, 0)
+                        timeText:SetShadowOffset(0, 0)
+                    end
+                else
+                    timeText:Hide()
+                end
+            end
+
+            -- Apply backdrop to the bar frame
+            if barFrame.SetBackdrop then
+                barFrame:SetBackdrop(BCDM.BACKDROP)
+                if borderSize > 0 then
+                    barFrame:SetBackdropBorderColor(0, 0, 0, 1)
+                else
+                    barFrame:SetBackdropBorderColor(0, 0, 0, 0)
+                end
+                barFrame:SetBackdropColor(BuffBarDB.BackgroundColour[1], BuffBarDB.BackgroundColour[2], BuffBarDB.BackgroundColour[3], BuffBarDB.BackgroundColour[4])
+            end
+        end
+    end
+end
+
+local function PositionTrackedBars()
+    local BuffBarDB = BCDM.db.profile.CooldownManager.BuffBar
+    local viewerFrame = _G["BuffBarCooldownViewer"]
+    if not viewerFrame then return end
+    viewerFrame:ClearAllPoints()
+    local anchorParent = BuffBarDB.Layout[2] == "NONE" and UIParent or _G[BuffBarDB.Layout[2]]
+    if not anchorParent then anchorParent = UIParent end
+    viewerFrame:SetPoint(BuffBarDB.Layout[1], anchorParent, BuffBarDB.Layout[3], BuffBarDB.Layout[4], BuffBarDB.Layout[5])
+    viewerFrame:SetFrameStrata("LOW")
+    NudgeViewer("BuffBarCooldownViewer", -0.1, 0)
+end
+
+
 function BCDM:SkinCooldownManager()
     local LEMO = BCDM.LEMO
     LEMO:LoadLayouts()
@@ -288,8 +440,11 @@ function BCDM:SkinCooldownManager()
     Position()
     SetHooks()
     SetupCenterBuffs()
+    StyleTrackedBars()
+    PositionTrackedBars()
     if EssentialCooldownViewer and EssentialCooldownViewer.RefreshLayout then hooksecurefunc(EssentialCooldownViewer, "RefreshLayout", function() CenterWrappedIcons() end) end
     if UtilityCooldownViewer and UtilityCooldownViewer.RefreshLayout then hooksecurefunc(UtilityCooldownViewer, "RefreshLayout", function() CenterWrappedIcons() end) end
+    if BuffBarCooldownViewer and BuffBarCooldownViewer.RefreshLayout then hooksecurefunc(BuffBarCooldownViewer, "RefreshLayout", function() if InCombatLockdown() then return end StyleTrackedBars() PositionTrackedBars() end) end
     for _, viewerName in ipairs(BCDM.CooldownManagerViewers) do
         C_Timer.After(0.1, function() ApplyCooldownText(viewerName) end)
     end
@@ -299,6 +454,12 @@ function BCDM:SkinCooldownManager()
             LEMO:ApplyChanges()
         end
     end)
+end
+
+function BCDM:UpdateTrackedBars()
+    if not ShouldSkin() then return end
+    StyleTrackedBars()
+    PositionTrackedBars()
 end
 
 function BCDM:UpdateCooldownViewer(viewerType)
@@ -311,6 +472,7 @@ function BCDM:UpdateCooldownViewer(viewerType)
     if viewerType == "Item" then BCDM:UpdateCustomItemBar() return end
     if viewerType == "Trinket" then BCDM:UpdateTrinketBar() return end
     if viewerType == "ItemSpell" then BCDM:UpdateCustomItemsSpellsBar() return end
+    if viewerType == "BuffBar" then BCDM:UpdateTrackedBars() return end
     if viewerType == "Buffs" then SetupCenterBuffs() end
 
     for _, childFrame in ipairs({cooldownViewerFrame:GetChildren()}) do
@@ -350,6 +512,7 @@ function BCDM:UpdateCooldownViewers()
     BCDM:UpdateCooldownViewer("Essential")
     BCDM:UpdateCooldownViewer("Utility")
     BCDM:UpdateCooldownViewer("Buffs")
+    BCDM:UpdateTrackedBars()
     BCDM:UpdateCustomCooldownViewer()
     BCDM:UpdateAdditionalCustomCooldownViewer()
     BCDM:UpdateCustomItemBar()

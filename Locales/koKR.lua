@@ -16,6 +16,7 @@ L["Items & Spells"] = "템 / 주문"
 L["Power Bar"] = "자원 바"
 L["Secondary Power Bar"] = "보조 자원 바"
 L["Cast Bar"] = "시전 바"
+L["Tracked Bars"] = "추적 바"
 L["Profiles"] = "프로필"
 
 -- [[ Power & Resource Names ]]

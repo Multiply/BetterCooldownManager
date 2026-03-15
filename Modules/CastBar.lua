@@ -373,6 +373,7 @@ end
 function BCDM:UpdateCastBarWidth()
     local CastBarDB = BCDM.db.profile.CastBar
     local CastBar = BCDM.CastBar
+    if not CastBar then return end
     if CastBarDB.Enabled and CastBarDB.MatchWidthOfAnchor then
         local anchorFrame = _G[CastBarDB.Layout[2]]
         if anchorFrame then

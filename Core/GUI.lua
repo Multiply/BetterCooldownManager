@@ -270,6 +270,7 @@ local function BuildMainNavigationTree()
         { text = LL("Essential"), value = "Essential" },
         { text = LL("Utility"), value = "Utility" },
         { text = LL("Buffs"), value = "Buffs" },
+        { text = LL("Tracked Bars"), value = "BuffBar" },
         { text = LL("Custom"), value = "Custom" },
         { text = LL("Additional Custom"), value = "AdditionalCustom" },
         { text = LL("Item"), value = "Item" },
@@ -2894,6 +2895,267 @@ local function CreateCastBarTextSettings(parentContainer)
     return textContainer
 end
 
+local function CreateTrackedBarSettings(parentContainer)
+    local ScrollFrame = AG:Create("ScrollFrame")
+    ScrollFrame:SetLayout("Flow")
+    ScrollFrame:SetFullWidth(true)
+    ScrollFrame:SetFullHeight(true)
+    parentContainer:AddChild(ScrollFrame)
+
+    local toggleContainer = AG:Create("InlineGroup")
+    toggleContainer:SetTitle(LL("Toggles & Colours"))
+    toggleContainer:SetFullWidth(true)
+    toggleContainer:SetLayout("Flow")
+    ScrollFrame:AddChild(toggleContainer)
+
+    local colourByClassCheckbox = AG:Create("CheckBox")
+    colourByClassCheckbox:SetLabel(LL("Colour By Class"))
+    colourByClassCheckbox:SetValue(BCDM.db.profile.CooldownManager.BuffBar.ColourByClass)
+    colourByClassCheckbox:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.ColourByClass = value BCDM:UpdateTrackedBars() end)
+    colourByClassCheckbox:SetRelativeWidth(0.5)
+    toggleContainer:AddChild(colourByClassCheckbox)
+
+    local foregroundColourPicker = AG:Create("ColorPicker")
+    foregroundColourPicker:SetLabel(LL("Foreground Colour"))
+    foregroundColourPicker:SetColor(BCDM.db.profile.CooldownManager.BuffBar.ForegroundColour[1], BCDM.db.profile.CooldownManager.BuffBar.ForegroundColour[2], BCDM.db.profile.CooldownManager.BuffBar.ForegroundColour[3], BCDM.db.profile.CooldownManager.BuffBar.ForegroundColour[4])
+    foregroundColourPicker:SetCallback("OnValueChanged", function(_, _, r, g, b, a) BCDM.db.profile.CooldownManager.BuffBar.ForegroundColour = {r, g, b, a} BCDM:UpdateTrackedBars() end)
+    foregroundColourPicker:SetRelativeWidth(0.5)
+    foregroundColourPicker:SetHasAlpha(true)
+    toggleContainer:AddChild(foregroundColourPicker)
+
+    local backgroundColourPicker = AG:Create("ColorPicker")
+    backgroundColourPicker:SetLabel(LL("Background Colour"))
+    backgroundColourPicker:SetColor(BCDM.db.profile.CooldownManager.BuffBar.BackgroundColour[1], BCDM.db.profile.CooldownManager.BuffBar.BackgroundColour[2], BCDM.db.profile.CooldownManager.BuffBar.BackgroundColour[3], BCDM.db.profile.CooldownManager.BuffBar.BackgroundColour[4])
+    backgroundColourPicker:SetCallback("OnValueChanged", function(_, _, r, g, b, a) BCDM.db.profile.CooldownManager.BuffBar.BackgroundColour = {r, g, b, a} BCDM:UpdateTrackedBars() end)
+    backgroundColourPicker:SetRelativeWidth(0.5)
+    backgroundColourPicker:SetHasAlpha(true)
+    toggleContainer:AddChild(backgroundColourPicker)
+
+    local layoutContainer = AG:Create("InlineGroup")
+    layoutContainer:SetTitle(LL("Layout & Positioning"))
+    layoutContainer:SetFullWidth(true)
+    layoutContainer:SetLayout("Flow")
+    ScrollFrame:AddChild(layoutContainer)
+
+    local anchorFromDropdown = AG:Create("Dropdown")
+    anchorFromDropdown:SetLabel(LL("Anchor From"))
+    anchorFromDropdown:SetList(AnchorPoints[1], AnchorPoints[2])
+    anchorFromDropdown:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Layout[1])
+    anchorFromDropdown:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Layout[1] = value BCDM:UpdateTrackedBars() end)
+    anchorFromDropdown:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(anchorFromDropdown)
+
+    local anchorParentDropdown = AG:Create("Dropdown")
+    anchorParentDropdown:SetLabel(LL("Anchor Parent"))
+    anchorParentDropdown:SetList(AnchorParents["BuffBar"][1], AnchorParents["BuffBar"][2])
+    anchorParentDropdown:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Layout[2])
+    anchorParentDropdown:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Layout[2] = value BCDM:UpdateTrackedBars() end)
+    anchorParentDropdown:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(anchorParentDropdown)
+
+    local anchorToDropdown = AG:Create("Dropdown")
+    anchorToDropdown:SetLabel(LL("Anchor To"))
+    anchorToDropdown:SetList(AnchorPoints[1], AnchorPoints[2])
+    anchorToDropdown:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Layout[3])
+    anchorToDropdown:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Layout[3] = value BCDM:UpdateTrackedBars() end)
+    anchorToDropdown:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(anchorToDropdown)
+
+    local heightSlider = AG:Create("Slider")
+    heightSlider:SetLabel(LL("Height"))
+    heightSlider:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Height)
+    heightSlider:SetSliderValues(5, 100, 0.1)
+    heightSlider:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Height = value BCDM:UpdateTrackedBars() end)
+    heightSlider:SetRelativeWidth(0.5)
+    layoutContainer:AddChild(heightSlider)
+
+    local xOffsetSlider = AG:Create("Slider")
+    xOffsetSlider:SetLabel(LL("X Offset"))
+    xOffsetSlider:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Layout[4])
+    xOffsetSlider:SetSliderValues(-3000, 3000, 0.1)
+    xOffsetSlider:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Layout[4] = value BCDM:UpdateTrackedBars() end)
+    xOffsetSlider:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(xOffsetSlider)
+
+    local yOffsetSlider = AG:Create("Slider")
+    yOffsetSlider:SetLabel(LL("Y Offset"))
+    yOffsetSlider:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Layout[5])
+    yOffsetSlider:SetSliderValues(-3000, 3000, 0.1)
+    yOffsetSlider:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Layout[5] = value BCDM:UpdateTrackedBars() end)
+    yOffsetSlider:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(yOffsetSlider)
+
+    local spacingSlider = AG:Create("Slider")
+    spacingSlider:SetLabel(LL("Spacing"))
+    spacingSlider:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Spacing)
+    spacingSlider:SetSliderValues(-1, 32, 1)
+    spacingSlider:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Spacing = value BCDM:UpdateTrackedBars() end)
+    spacingSlider:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(spacingSlider)
+
+    local growthDirectionDropdown = AG:Create("Dropdown")
+    growthDirectionDropdown:SetLabel(LL("Growth Direction"))
+    growthDirectionDropdown:SetList({ ["UP"] = "Up", ["DOWN"] = "Down" }, { "UP", "DOWN" })
+    growthDirectionDropdown:SetValue(BCDM.db.profile.CooldownManager.BuffBar.GrowthDirection)
+    growthDirectionDropdown:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.GrowthDirection = value BCDM:UpdateTrackedBars() end)
+    growthDirectionDropdown:SetRelativeWidth(0.33)
+    layoutContainer:AddChild(growthDirectionDropdown)
+
+    local iconContainer = AG:Create("InlineGroup")
+    iconContainer:SetTitle(LL("Icon Settings"))
+    iconContainer:SetFullWidth(true)
+    iconContainer:SetLayout("Flow")
+    ScrollFrame:AddChild(iconContainer)
+
+    local enableIconCheckbox = AG:Create("CheckBox")
+    enableIconCheckbox:SetLabel(LL("Enable Icon"))
+    enableIconCheckbox:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Icon.Enabled)
+    enableIconCheckbox:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Icon.Enabled = value BCDM:UpdateTrackedBars() end)
+    enableIconCheckbox:SetRelativeWidth(0.5)
+    iconContainer:AddChild(enableIconCheckbox)
+
+    local iconLayoutDropdown = AG:Create("Dropdown")
+    iconLayoutDropdown:SetLabel(LL("Icon Position"))
+    iconLayoutDropdown:SetList({ ["LEFT"] = "Left", ["RIGHT"] = "Right" }, { "LEFT", "RIGHT" })
+    iconLayoutDropdown:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Icon.Layout)
+    iconLayoutDropdown:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Icon.Layout = value BCDM:UpdateTrackedBars() end)
+    iconLayoutDropdown:SetRelativeWidth(0.5)
+    iconContainer:AddChild(iconLayoutDropdown)
+
+    local textContainer = AG:Create("InlineGroup")
+    textContainer:SetTitle(LL("Text Settings"))
+    textContainer:SetFullWidth(true)
+    textContainer:SetLayout("Flow")
+    ScrollFrame:AddChild(textContainer)
+
+    -- Spell Name Text
+    local spellNameContainer = AG:Create("InlineGroup")
+    spellNameContainer:SetTitle(LL("Spell Name"))
+    spellNameContainer:SetFullWidth(true)
+    spellNameContainer:SetLayout("Flow")
+    textContainer:AddChild(spellNameContainer)
+
+    local spellNameEnabledCheckbox = AG:Create("CheckBox")
+    spellNameEnabledCheckbox:SetLabel(LL("Enable Spell Name"))
+    spellNameEnabledCheckbox:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Enabled)
+    spellNameEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Enabled = value BCDM:UpdateTrackedBars() end)
+    spellNameEnabledCheckbox:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellNameEnabledCheckbox)
+
+    local spellNameFontSize = AG:Create("Slider")
+    spellNameFontSize:SetLabel(LL("Font Size"))
+    spellNameFontSize:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.FontSize)
+    spellNameFontSize:SetSliderValues(6, 72, 1)
+    spellNameFontSize:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.FontSize = value BCDM:UpdateTrackedBars() end)
+    spellNameFontSize:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellNameFontSize)
+
+    local spellNameColour = AG:Create("ColorPicker")
+    spellNameColour:SetLabel(LL("Text Colour"))
+    spellNameColour:SetColor(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Colour[1], BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Colour[2], BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Colour[3], 1)
+    spellNameColour:SetCallback("OnValueChanged", function(_, _, r, g, b) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Colour = {r, g, b} BCDM:UpdateTrackedBars() end)
+    spellNameColour:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellNameColour)
+
+    local spellName_AnchorFrom = AG:Create("Dropdown")
+    spellName_AnchorFrom:SetLabel(LL("Anchor From"))
+    spellName_AnchorFrom:SetList(AnchorPoints[1], AnchorPoints[2])
+    spellName_AnchorFrom:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[1])
+    spellName_AnchorFrom:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[1] = value BCDM:UpdateTrackedBars() end)
+    spellName_AnchorFrom:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellName_AnchorFrom)
+
+    local spellName_AnchorTo = AG:Create("Dropdown")
+    spellName_AnchorTo:SetLabel(LL("Anchor To"))
+    spellName_AnchorTo:SetList(AnchorPoints[1], AnchorPoints[2])
+    spellName_AnchorTo:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[2])
+    spellName_AnchorTo:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[2] = value BCDM:UpdateTrackedBars() end)
+    spellName_AnchorTo:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellName_AnchorTo)
+
+    local spellName_XOffset = AG:Create("Slider")
+    spellName_XOffset:SetLabel(LL("X Offset"))
+    spellName_XOffset:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[3])
+    spellName_XOffset:SetSliderValues(-500, 500, 0.1)
+    spellName_XOffset:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[3] = value BCDM:UpdateTrackedBars() end)
+    spellName_XOffset:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellName_XOffset)
+
+    local spellName_YOffset = AG:Create("Slider")
+    spellName_YOffset:SetLabel(LL("Y Offset"))
+    spellName_YOffset:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[4])
+    spellName_YOffset:SetSliderValues(-500, 500, 0.1)
+    spellName_YOffset:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.SpellName.Layout[4] = value BCDM:UpdateTrackedBars() end)
+    spellName_YOffset:SetRelativeWidth(0.33)
+    spellNameContainer:AddChild(spellName_YOffset)
+
+    -- Duration Text
+    local durationContainer = AG:Create("InlineGroup")
+    durationContainer:SetTitle(LL("Duration"))
+    durationContainer:SetFullWidth(true)
+    durationContainer:SetLayout("Flow")
+    textContainer:AddChild(durationContainer)
+
+    local durationEnabledCheckbox = AG:Create("CheckBox")
+    durationEnabledCheckbox:SetLabel(LL("Enable Duration"))
+    durationEnabledCheckbox:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Enabled)
+    durationEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Enabled = value BCDM:UpdateTrackedBars() end)
+    durationEnabledCheckbox:SetRelativeWidth(0.33)
+    durationContainer:AddChild(durationEnabledCheckbox)
+
+    local durationFontSize = AG:Create("Slider")
+    durationFontSize:SetLabel(LL("Font Size"))
+    durationFontSize:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.FontSize)
+    durationFontSize:SetSliderValues(6, 72, 1)
+    durationFontSize:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.FontSize = value BCDM:UpdateTrackedBars() end)
+    durationFontSize:SetRelativeWidth(0.33)
+    durationContainer:AddChild(durationFontSize)
+
+    local durationColour = AG:Create("ColorPicker")
+    durationColour:SetLabel(LL("Text Colour"))
+    durationColour:SetColor(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Colour[1], BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Colour[2], BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Colour[3], 1)
+    durationColour:SetCallback("OnValueChanged", function(_, _, r, g, b) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Colour = {r, g, b} BCDM:UpdateTrackedBars() end)
+    durationColour:SetRelativeWidth(0.33)
+    durationContainer:AddChild(durationColour)
+
+    local duration_AnchorFrom = AG:Create("Dropdown")
+    duration_AnchorFrom:SetLabel(LL("Anchor From"))
+    duration_AnchorFrom:SetList(AnchorPoints[1], AnchorPoints[2])
+    duration_AnchorFrom:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[1])
+    duration_AnchorFrom:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[1] = value BCDM:UpdateTrackedBars() end)
+    duration_AnchorFrom:SetRelativeWidth(0.33)
+    durationContainer:AddChild(duration_AnchorFrom)
+
+    local duration_AnchorTo = AG:Create("Dropdown")
+    duration_AnchorTo:SetLabel(LL("Anchor To"))
+    duration_AnchorTo:SetList(AnchorPoints[1], AnchorPoints[2])
+    duration_AnchorTo:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[2])
+    duration_AnchorTo:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[2] = value BCDM:UpdateTrackedBars() end)
+    duration_AnchorTo:SetRelativeWidth(0.33)
+    durationContainer:AddChild(duration_AnchorTo)
+
+    local duration_XOffset = AG:Create("Slider")
+    duration_XOffset:SetLabel(LL("X Offset"))
+    duration_XOffset:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[3])
+    duration_XOffset:SetSliderValues(-500, 500, 0.1)
+    duration_XOffset:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[3] = value BCDM:UpdateTrackedBars() end)
+    duration_XOffset:SetRelativeWidth(0.33)
+    durationContainer:AddChild(duration_XOffset)
+
+    local duration_YOffset = AG:Create("Slider")
+    duration_YOffset:SetLabel(LL("Y Offset"))
+    duration_YOffset:SetValue(BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[4])
+    duration_YOffset:SetSliderValues(-500, 500, 0.1)
+    duration_YOffset:SetCallback("OnValueChanged", function(_, _, value) BCDM.db.profile.CooldownManager.BuffBar.Text.Duration.Layout[4] = value BCDM:UpdateTrackedBars() end)
+    duration_YOffset:SetRelativeWidth(0.33)
+    durationContainer:AddChild(duration_YOffset)
+
+    -- Disable/enable logic
+    if BCDM.db.profile.CooldownManager.BuffBar.ColourByClass then
+        foregroundColourPicker:SetDisabled(true)
+    end
+end
+
 local function CreateCastBarSettings(parentContainer)
     local ScrollFrame = AG:Create("ScrollFrame")
     ScrollFrame:SetLayout("Flow")
@@ -3329,7 +3591,7 @@ function BCDM:CreateGUI()
     Container:SetWidth(1100)
     Container:SetHeight(600)
     Container:EnableResize(false)
-    Container:SetCallback("OnClose", function(widget) AG:Release(widget) LEMO:ApplyChanges() BCDM:UpdateBCDM() isGUIOpen = false BCDM.CAST_BAR_TEST_MODE = false BCDM:CreateTestCastBar() BCDM.EssentialCooldownViewerOverlay:Hide() BCDM.UtilityCooldownViewerOverlay:Hide() BCDM.BuffIconCooldownViewerOverlay:Hide() if CooldownViewerSettings:IsShown() then CooldownViewerSettings:Hide() end end)
+    Container:SetCallback("OnClose", function(widget) AG:Release(widget) LEMO:ApplyChanges() BCDM:UpdateBCDM() isGUIOpen = false BCDM.CAST_BAR_TEST_MODE = false BCDM:CreateTestCastBar() if BCDM.EssentialCooldownViewerOverlay then BCDM.EssentialCooldownViewerOverlay:Hide() end if BCDM.UtilityCooldownViewerOverlay then BCDM.UtilityCooldownViewerOverlay:Hide() end if BCDM.BuffIconCooldownViewerOverlay then BCDM.BuffIconCooldownViewerOverlay:Hide() end if BCDM.BuffBarCooldownViewerOverlay then BCDM.BuffBarCooldownViewerOverlay:Hide() end if CooldownViewerSettings:IsShown() then CooldownViewerSettings:Hide() end end)
 
     local function SelectTab(GUIContainer, _, MainTab)
         GUIContainer:ReleaseChildren()
@@ -3352,6 +3614,8 @@ function BCDM:CreateGUI()
             CreateCooldownViewerSettings(Wrapper, "Utility")
         elseif MainTab == "Buffs" then
             CreateCooldownViewerSettings(Wrapper, "Buffs")
+        elseif MainTab == "BuffBar" then
+            CreateTrackedBarSettings(Wrapper)
         elseif MainTab == "Custom" then
             CreateCooldownViewerSettings(Wrapper, "Custom")
         elseif MainTab == "AdditionalCustom" then
@@ -3373,9 +3637,10 @@ function BCDM:CreateGUI()
         end
         if MainTab == "Essential" or MainTab == "Utility" or MainTab == "Buffs" then CooldownViewerSettings:Show() else CooldownViewerSettings:Hide() end
         if MainTab == "CastBar" then BCDM.CAST_BAR_TEST_MODE = true BCDM:CreateTestCastBar() else BCDM.CAST_BAR_TEST_MODE = false BCDM:CreateTestCastBar() end
-        if MainTab == "Essential" then  BCDM.EssentialCooldownViewerOverlay:Show() else BCDM.EssentialCooldownViewerOverlay:Hide() end
-        if MainTab == "Utility" then  BCDM.UtilityCooldownViewerOverlay:Show() else BCDM.UtilityCooldownViewerOverlay:Hide() end
-        if MainTab == "Buffs" then  BCDM.BuffIconCooldownViewerOverlay:Show() else BCDM.BuffIconCooldownViewerOverlay:Hide() end
+        if BCDM.EssentialCooldownViewerOverlay then if MainTab == "Essential" then BCDM.EssentialCooldownViewerOverlay:Show() else BCDM.EssentialCooldownViewerOverlay:Hide() end end
+        if BCDM.UtilityCooldownViewerOverlay then if MainTab == "Utility" then BCDM.UtilityCooldownViewerOverlay:Show() else BCDM.UtilityCooldownViewerOverlay:Hide() end end
+        if BCDM.BuffIconCooldownViewerOverlay then if MainTab == "Buffs" then BCDM.BuffIconCooldownViewerOverlay:Show() else BCDM.BuffIconCooldownViewerOverlay:Hide() end end
+        if BCDM.BuffBarCooldownViewerOverlay then if MainTab == "BuffBar" then BCDM.BuffBarCooldownViewerOverlay:Show() else BCDM.BuffBarCooldownViewerOverlay:Hide() end end
         GenerateSupportText(Container)
     end
 

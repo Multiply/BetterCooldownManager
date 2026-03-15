@@ -249,6 +249,7 @@ function BCDM:UpdateBCDM()
     BCDM:UpdatePowerBar()
     BCDM:UpdateSecondaryPowerBar()
     BCDM:UpdateCastBar()
+    BCDM:UpdateTrackedBars()
     BCDM:UpdateCustomCooldownViewer()
     BCDM:UpdateAdditionalCustomCooldownViewer()
     BCDM:UpdateCustomItemBar()
@@ -291,6 +292,17 @@ function BCDM:CreateCooldownViewerOverlays()
         BuffIconCooldownViewerOverlay:SetBackdropBorderColor(unpack(OVERLAY_COLOUR))
         BuffIconCooldownViewerOverlay:Hide()
         BCDM.BuffIconCooldownViewerOverlay = BuffIconCooldownViewerOverlay
+    end
+
+    if _G["BuffBarCooldownViewer"] then
+        local BuffBarCooldownViewerOverlay = CreateFrame("Frame", "BCDM_BuffBarCooldownViewerOverlay", UIParent, "BackdropTemplate")
+        BuffBarCooldownViewerOverlay:SetPoint("TOPLEFT", _G["BuffBarCooldownViewer"], "TOPLEFT", -8, 8)
+        BuffBarCooldownViewerOverlay:SetPoint("BOTTOMRIGHT", _G["BuffBarCooldownViewer"], "BOTTOMRIGHT", 8, -8)
+        BuffBarCooldownViewerOverlay:SetBackdrop({ edgeFile = "Interface\\AddOns\\BetterCooldownManager\\Media\\Glow.tga", edgeSize = 8, insets = {left = -8, right = -8, top = -8, bottom = -8} })
+        BuffBarCooldownViewerOverlay:SetBackdropColor(0, 0, 0, 0)
+        BuffBarCooldownViewerOverlay:SetBackdropBorderColor(unpack(OVERLAY_COLOUR))
+        BuffBarCooldownViewerOverlay:Hide()
+        BCDM.BuffBarCooldownViewerOverlay = BuffBarCooldownViewerOverlay
     end
 end
 
@@ -622,6 +634,18 @@ BCDM.AnchorParents = {
             ["BCDM_SecondaryPowerBar"] = "|cFF8080FFBCDM|r: Secondary Power Bar",
         },
         { "EssentialCooldownViewer", "UtilityCooldownViewer", "BCDM_PowerBar", "BCDM_SecondaryPowerBar" },
+    },
+    ["BuffBar"] = {
+        {
+            ["EssentialCooldownViewer"] = "|cFF00AEF7Blizzard|r: Essential Cooldown Viewer",
+            ["UtilityCooldownViewer"] = "|cFF00AEF7Blizzard|r: Utility Cooldown Viewer",
+            ["BuffIconCooldownViewer"] = "|cFF00AEF7Blizzard|r: Buff Icon Cooldown Viewer",
+            ["NONE"] = "|cFF00AEF7Blizzard|r: UIParent",
+            ["BCDM_PowerBar"] = "|cFF8080FFBCDM|r: Power Bar",
+            ["BCDM_SecondaryPowerBar"] = "|cFF8080FFBCDM|r: Secondary Power Bar",
+            ["BCDM_CastBar"] = "|cFF8080FFBCDM|r: Cast Bar",
+        },
+        { "EssentialCooldownViewer", "UtilityCooldownViewer", "BuffIconCooldownViewer", "NONE", "BCDM_PowerBar", "BCDM_SecondaryPowerBar", "BCDM_CastBar" },
     }
 }
 

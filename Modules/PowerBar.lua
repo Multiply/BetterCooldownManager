@@ -241,6 +241,7 @@ end
 function BCDM:UpdatePowerBarWidth()
     local PowerBarDB = BCDM.db.profile.PowerBar
     local PowerBar = BCDM.PowerBar
+    if not PowerBar then return end
     if PowerBarDB.Enabled and PowerBarDB.MatchWidthOfAnchor then
         local anchorFrame = _G[PowerBarDB.Layout[2]]
         if anchorFrame then

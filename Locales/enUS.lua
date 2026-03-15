@@ -16,6 +16,7 @@ L["Items & Spells"] = "Items / Spells"
 L["Power Bar"] = "Power Bar"
 L["Secondary Power Bar"] = "Secondary Power Bar"
 L["Cast Bar"] = "Cast Bar"
+L["Tracked Bars"] = "Tracked Bars"
 L["Profiles"] = "Profiles"
 
 -- [[ Power & Resource Names ]]
